@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Clock - Multiple Time Zones</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .clocks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .clock-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 25px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .clock-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .timezone-name {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .time-display {
+            font-size: 2.5em;
+            font-weight: bold;
+            font-family: 'Digital-7', 'Courier New', monospace;
+            text-align: center;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .date-display {
+            font-size: 0.85em;
+            text-align: center;
+            opacity: 0.9;
+        }
+
+        .offset {
+            font-size: 0.75em;
+            opacity: 0.7;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+                margin-bottom: 30px;
+            }
+
+            .clocks-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .time-display {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🕐 World Clock</h1>
+        <div class="clocks-grid" id="clocks-container"></div>
+    </div>
+
+    <script>
+        const timezones = [
+            { name: 'London (GMT)', zone: 'Europe/London', offset: 0 },
+            { name: 'New York (EST)', zone: 'America/New_York', offset: -5 },
+            { name: 'Los Angeles (PST)', zone: 'America/Los_Angeles', offset: -8 },
+            { name: 'Tokyo (JST)', zone: 'Asia/Tokyo', offset: 9 },
+            { name: 'Sydney (AEDT)', zone: 'Australia/Sydney', offset: 11 },
+            { name: 'Dubai (GST)', zone: 'Asia/Dubai', offset: 4 },
+            { name: 'Singapore (SGT)', zone: 'Asia/Singapore', offset: 8 },
+            { name: 'Paris (CET)', zone: 'Europe/Paris', offset: 1 },
+            { name: 'Mumbai (IST)', zone: 'Asia/Kolkata', offset: 5.5 },
+            { name: 'Hong Kong (HKT)', zone: 'Asia/Hong_Kong', offset: 8 },
+            { name: 'Toronto (EST)', zone: 'America/Toronto', offset: -5 },
+            { name: 'São Paulo (BRT)', zone: 'America/Sao_Paulo', offset: -3 }
+        ];
+
+        function formatTime(date) {
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+
+        function formatDate(date) {
+            const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+            return date.toLocaleDateString('en-US', options);
+        }
+
+        function createClockCard(timezone) {
+            const card = document.createElement('div');
+            card.className = 'clock-card';
+            card.innerHTML = `
+                <div class="timezone-name">${timezone.name}</div>
+                <div class="time-display" id="time-${timezone.zone}">--:--:--</div>
+                <div class="date-display" id="date-${timezone.zone}">---</div>
+                <div class="offset">UTC${timezone.offset >= 0 ? '+' : ''}${timezone.offset}</div>
+            `;
+            return card;
+        }
+
+        function updateClocks() {
+            timezones.forEach(timezone => {
+                const now = new Date();
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: timezone.zone,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+                
+                const dateFormatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: timezone.zone,
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+
+                const timeString = formatter.format(now);
+                const dateString = dateFormatter.format(now);
+
+                const timeElement = document.getElementById(`time-${timezone.zone}`);
+                const dateElement = document.getElementById(`date-${timezone.zone}`);
+
+                if (timeElement) timeElement.textContent = timeString;
+                if (dateElement) dateElement.textContent = dateString;
+            });
+        }
+
+        function initializeClocks() {
+            const container = document.getElementById('clocks-container');
+            timezones.forEach(timezone => {
+                container.appendChild(createClockCard(timezone));
+            });
+            updateClocks();
+        }
+
+        // Initialize and update every second
+        initializeClocks();
+        setInterval(updateClocks, 1000);
+    </script>
+</body>
+</html>
